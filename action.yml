@@ -1,0 +1,29 @@
+name: 'github-actions-merger'
+description: 'merge pull request with labels'
+author: 'abema'
+branding:
+  icon: 'meh'
+  color: 'green'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+inputs:
+  mergeMethod:
+    description: "merge method"
+    required: false
+    default: "merge"
+  github token:
+    description: "github token"
+    required: true
+  owner:
+    description: "owner"
+    required: true
+  repo:
+    description: "repository"
+    required: true
+  pr number:
+    description: "pull request number"
+    required: true
+  comment:
+    description: "pull comment"
+    required: true
