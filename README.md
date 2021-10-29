@@ -28,8 +28,8 @@ fix: readme
 You need to set parameters in workflow.
 ```
 github: token: ${{ secrets.GITHUB_TOKEN }}
-owner: repository owner
-repo: repository name
+"owner": ${{ github.event.repository.owner.login }}
+"repo": ${{ github.event.repository.name }}
 pr number: ${{ github.event.issue.number }}
 comment: ${{ github.event.comment.body }}
 ```
