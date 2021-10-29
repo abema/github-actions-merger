@@ -1,7 +1,7 @@
 name: merge
-on: 
-  issue_comment:
-    types: [created, edited]
+on: [pull_request]
+  # issue_comment:
+  #   types: [created, edited]
 
 jobs:
   merge:
@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: labelcommit
-        uses: abema/github-actions-merger@main
+        # uses: abema/github-actions-merger@main
+        uses: abema/github-actions-merger@fix-readme
         with: 
           "github token": ${{ secrets.GITHUB_TOKEN }}
           "owner": ${{ github.event.repository.owner.login }}
           "repo": ${{ github.event.repository.name }}
-          "pr number": ${{ github.event.issue.number }}
-          "comment": ${{ github.event.comment.body }}
+          # "pr number": ${{ github.event.issue.number }}
+          "pr number": 3
+          # "comment": ${{ github.event.comment.body }}
+          "comment": "/merge"
