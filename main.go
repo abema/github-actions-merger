@@ -41,15 +41,14 @@ func main() {
 	defer f()
 	client := newGHClient(e.GithubToken)
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
-		if err := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, err.Error()); err != nil {
-			log.Fatal(err.Error())
+		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, err.Error()); serr != nil {
+			log.Fatalf("failed to send message: %v original: %v", serr, err)
 		}
-		return
+		log.Fatal(err.Error())
 	}
 	successMsg := "Merged PR #" + fmt.Sprintf("%d", e.PRNumber) + " successfully!"
 	if err := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, successMsg); err != nil {
 		log.Fatal(err.Error())
-		return
 	}
 	log.Printf(successMsg)
 }
