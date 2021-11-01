@@ -6,8 +6,6 @@ RUN go mod download
 COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o /bin/app
 
-FROM alpine:3.14.2
-RUN apk --no-cache add ca-certificates
-WORKDIR /app
+FROM gcr.io/distroless/base
 COPY --from=builder /bin/app /bin/app
 ENTRYPOINT ["/bin/app"]
