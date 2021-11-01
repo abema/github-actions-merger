@@ -8,7 +8,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
 inputs:
-  mergeMethod:
+  merge method:
     description: "merge method"
     required: false
     default: "merge"

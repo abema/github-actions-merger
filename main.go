@@ -18,7 +18,7 @@ type env struct {
 	Repo        string `envconfig:"REPO"`
 	PRNumber    int    `envconfig:"PR_NUMBER"`
 	Comment     string `envconfig:"COMMENT"`
-	MergeMethod string `envconfig:"MERGEMETHOD" default:"merge"`
+	MergeMethod string `envconfig:"MERGE_METHOD" default:"merge"`
 }
 
 const (
