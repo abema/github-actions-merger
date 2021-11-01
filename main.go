@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/kelseyhightower/envconfig"
@@ -22,6 +23,7 @@ type env struct {
 
 const (
 	mergeComment = "/merge"
+	jobTimeout   = 10 * 60 * time.Second
 )
 
 func main() {
@@ -35,7 +37,8 @@ func main() {
 		log.Println("comment is not /merge")
 		return
 	}
-	ctx := context.Background()
+	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
+	defer f()
 	client := newGHClient(e.GithubToken)
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
 		if err := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, err.Error()); err != nil {
