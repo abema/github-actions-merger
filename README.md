@@ -7,10 +7,10 @@ github-actions-merger is github actions that merges pull request with commit mes
   - name: merge
     uses: abema/github-actions-merger@main
     with: 
-      "github token": ${{ secrets.GITHUB_TOKEN }}
+      "github_token": ${{ secrets.GITHUB_TOKEN }}
       "owner": ${{ github.event.repository.owner.login }}
       "repo": ${{ github.event.repository.name }}
-      "pr number": ${{ github.event.issue.number }}
+      "pr_number": ${{ github.event.issue.number }}
       "comment": ${{ github.event.comment.body }}
 ```
 https://github.com/abema/github-actions-merger/blob/main/.github/workflows/github-actions-merger.yaml
