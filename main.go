@@ -99,11 +99,11 @@ func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int,
 }
 
 func (gh *ghClient) sendMsg(ctx context.Context, owner, repo string, prNumber int, msg string) error {
-	_, ghResp, err := gh.client.Issues.CreateComment(ctx, owner, repo, prNumber, &github.IssueComment{
+	_, _, err := gh.client.Issues.CreateComment(ctx, owner, repo, prNumber, &github.IssueComment{
 		Body: &msg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to send message: %w, githubResponse: %s", err, ghResp.String())
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 	return nil
 }
