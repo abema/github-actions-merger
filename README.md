@@ -27,9 +27,10 @@ fix: readme
 ## Parameters
 You need to set parameters in workflow.
 ```
-github: token: ${{ secrets.GITHUB_TOKEN }}
+github_token: ${{ secrets.GITHUB_TOKEN }}
 owner: ${{ github.event.repository.owner.login }}
 repo: ${{ github.event.repository.name }}
-pr number: ${{ github.event.issue.number }}
+pr_number: ${{ github.event.issue.number }}
 comment: ${{ github.event.comment.body }}
+merge_method: 'merge'
 ```
