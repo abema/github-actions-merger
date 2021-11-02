@@ -8,22 +8,22 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
 inputs:
-  merge method:
-    description: "merge method"
+  merge_method:
+    description: 'merge method'
     required: false
-    default: "merge"
-  github token:
-    description: "github token"
+    default: 'merge'
+  github_token:
+    description: 'github token'
     required: true
   owner:
-    description: "owner"
+    description: 'owner'
     required: true
   repo:
-    description: "repository"
+    description: 'repository'
     required: true
-  pr number:
-    description: "pull request number"
+  pr_number:
+    description: 'pull request number'
     required: true
   comment:
-    description: "pull comment"
+    description: 'pull comment'
     required: true
