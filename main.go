@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
-	"strings"
+	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -53,14 +54,6 @@ func main() {
 	log.Printf(successMsg)
 }
 
-func generateCommitMessage(labels []string) string {
-	var commitMessage string
-	if len(labels) > 0 {
-		commitMessage = "* " + strings.Join(labels, "\n* ")
-	}
-	return commitMessage
-}
-
 type ghClient struct {
 	client *github.Client
 }
@@ -82,20 +75,31 @@ func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int,
 	if err != nil {
 		return fmt.Errorf("failed to get pull request: %w", err)
 	}
-	labels := make([]string, 0, len(pr.Labels))
-	for _, l := range pr.Labels {
-		labels = append(labels, l.GetName())
+	commitMsg, err := generateCommitBody(pr)
+	if err != nil {
+		return fmt.Errorf("failed to generate template: %w", err)
 	}
-	commitMsg := generateCommitMessage(labels)
-
 	_, _, err = gh.client.PullRequests.Merge(ctx, owner, repo, prNumber, commitMsg, &github.PullRequestOptions{
-		CommitTitle: pr.GetTitle(),
+		CommitTitle: generateCommitSubject(pr),
 		MergeMethod: mergeMethod,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to merge pull request: %w", err)
 	}
 	return nil
+}
+
+func generateCommitSubject(pr *github.PullRequest) string {
+	return fmt.Sprintf("%s (#%d)", pr.GetTitle(), pr.GetNumber())
+}
+
+func generateCommitBody(pr *github.PullRequest) (string, error) {
+	body := newCommitBody(pr)
+	o := new(bytes.Buffer)
+	if err := bodyTpl.Execute(o, body); err != nil {
+		return "", err
+	}
+	return o.String(), nil
 }
 
 func (gh *ghClient) sendMsg(ctx context.Context, owner, repo string, prNumber int, msg string) error {
@@ -107,3 +111,31 @@ func (gh *ghClient) sendMsg(ctx context.Context, owner, repo string, prNumber in
 	}
 	return nil
 }
+
+func newCommitBody(pr *github.PullRequest) commitBody {
+	labels := make([]string, 0, len(pr.Labels))
+	for _, l := range pr.Labels {
+		labels = append(labels, l.GetName())
+	}
+	return commitBody{
+		Message: pr.GetBody(),
+		Labels:  labels,
+	}
+}
+
+type commitBody struct {
+	Labels  []string
+	Message string
+}
+
+var bodyTpl = template.Must(template.New("commit").Parse(`
+{{- if .Message }}
+{{ .Message }}
+{{- end }}
+{{if .Labels}}
+Labels:
+{{- range .Labels }}
+  * {{ . }}
+{{- end -}}
+{{- end -}}
+`))
