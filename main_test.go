@@ -129,7 +129,7 @@ func Test_validateEnv(t *testing.T) {
 			name: "actor is not merger",
 			args: args{
 				e: env{
-					Comment: "/approve",
+					Comment: "/merge",
 					Mergers: []string{"0daryo"},
 					Actor:   "github",
 				},
