@@ -27,3 +27,6 @@ inputs:
   comment:
     description: 'pull comment'
     required: true
+  mergers:
+    description: 'github username who can trigger merger. every user is allowed if not specified. format must be comma separated .e.g. na-ga,0daryo'
+    required: false
