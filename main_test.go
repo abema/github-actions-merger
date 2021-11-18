@@ -94,3 +94,54 @@ func Test_generateCommitSubject(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateEnv(t *testing.T) {
+	type args struct {
+		e env
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "valid env",
+			args: args{
+				e: env{
+					Comment: "/merge",
+					Mergers: []string{"0daryo"},
+					Actor:   "0daryo",
+				},
+			},
+		},
+		{
+			name: "invalid comment",
+			args: args{
+				e: env{
+					Comment: "/approve",
+					Mergers: []string{"0daryo"},
+					Actor:   "0daryo",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "actor is not merger",
+			args: args{
+				e: env{
+					Comment: "/approve",
+					Mergers: []string{"0daryo"},
+					Actor:   "github",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateEnv(tt.args.e); (err != nil) != tt.wantErr {
+				t.Errorf("validateEnv() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

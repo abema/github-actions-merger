@@ -14,12 +14,14 @@ import (
 )
 
 type env struct {
-	GithubToken string `envconfig:"GITHUB_TOKEN"`
-	Owner       string `envconfig:"OWNER"`
-	Repo        string `envconfig:"REPO"`
-	PRNumber    int    `envconfig:"PR_NUMBER"`
-	Comment     string `envconfig:"COMMENT"`
-	MergeMethod string `envconfig:"MERGE_METHOD" default:"merge"`
+	GithubToken string   `envconfig:"GITHUB_TOKEN"`
+	Owner       string   `envconfig:"OWNER"`
+	Repo        string   `envconfig:"REPO"`
+	PRNumber    int      `envconfig:"PR_NUMBER"`
+	Comment     string   `envconfig:"COMMENT"`
+	MergeMethod string   `envconfig:"MERGE_METHOD" default:"merge"`
+	Mergers     []string `envconfig:"MERGERS"`
+	Actor       string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
 }
 
 const (
@@ -33,10 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	if e.Comment != mergeComment {
-		log.Println("comment is not /merge")
-		return
+	if err := validateEnv(e); err != nil {
+		log.Fatal(err.Error())
 	}
 	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
 	defer f()
@@ -52,6 +52,22 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	log.Printf(successMsg)
+}
+
+func validateEnv(e env) error {
+	if e.Comment != mergeComment {
+		return fmt.Errorf("comment must be %s, got %s", mergeComment, e.Comment)
+	}
+	if len(e.Mergers) == 0 {
+		return nil
+	}
+	for _, m := range e.Mergers {
+		if e.Actor == m {
+			// if actor mathes specified mergers, then valid workflow run.
+			return nil
+		}
+	}
+	return fmt.Errorf("actor %s is not in mergers list", e.Actor)
 }
 
 type ghClient struct {
