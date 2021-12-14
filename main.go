@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"text/template"
 	"time"
 
@@ -42,7 +43,7 @@ func main() {
 	defer f()
 	client := newGHClient(e.GithubToken)
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
-		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, err.Error()); serr != nil {
+		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
 			log.Fatalf("failed to send message: %v original: %v", serr, err)
 		}
 		log.Fatal(err.Error())
@@ -155,3 +156,20 @@ Labels:
 {{- end -}}
 {{- end -}}
 `))
+
+var (
+	needApproveRegexp = regexp.MustCompile("At least ([0-9]+) approving review is required by reviewers with write access")
+)
+
+// errMsg returns error message to post from error.
+// Especially handing error from github. go-github does not have error type for some cases.
+func errMsg(err error) string {
+	if err == nil {
+		return "Succeeded!"
+	}
+	ss := needApproveRegexp.FindStringSubmatch(err.Error())
+	if len(ss) == 2 {
+		return fmt.Sprintf("Need %s approving review", ss[1])
+	}
+	return err.Error()
+}

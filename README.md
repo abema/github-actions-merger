@@ -36,3 +36,6 @@ comment: ${{ github.event.comment.body }}
 merge_method: 'merge'
 mergers: 'comma separeted github usernames. every user is allowed if not specified'
 ```
+
+## Note
+**Setting Branch protection rules is recommended to avoid unexpected merge of pull requests.**

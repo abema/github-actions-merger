@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-github/github"
@@ -141,6 +142,44 @@ func Test_validateEnv(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := validateEnv(tt.args.e); (err != nil) != tt.wantErr {
 				t.Errorf("validateEnv() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_errMsg(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "ok",
+			args: args{},
+			want: "Succeeded!",
+		},
+		{
+			name: "need approval",
+			args: args{
+				err: errors.New("failed to merge pull request: PUT https://api.github.com/repos/abema/github-actions-merger/pulls/1/merge: 405 At least 2 approving review is required by reviewers with write access. []"),
+			},
+			want: "Need 2 approving review",
+		},
+		{
+			name: "internal server error",
+			args: args{
+				err: errors.New("internal server error"),
+			},
+			want: "internal server error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := errMsg(tt.args.err); got != tt.want {
+				t.Errorf("errMsg() = %v, want %v", got, tt.want)
 			}
 		})
 	}
