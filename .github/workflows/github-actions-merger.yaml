@@ -1,14 +1,15 @@
 name: merge
+
 on: 
   issue_comment:
     types: [created, edited]
 
 jobs:
   merge:
-    if: ${{ github.event.issue.pull_request }} && github.event.review.state == 'approved'
+    if: ${{ (github.event.issue.pull_request) && (github.event.comment.body == '/merge') }}
     runs-on: ubuntu-latest
     steps:
-      - name: labelcommit
+      - name: Create merge commit with labels
         uses: abema/github-actions-merger@main
         with: 
           "github_token": ${{ secrets.GITHUB_TOKEN }}
