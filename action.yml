@@ -30,3 +30,6 @@ inputs:
   mergers:
     description: 'github username who can trigger merger. every user is allowed if not specified. format must be comma separated .e.g. na-ga,0daryo'
     required: false
+  auto_approvers:
+    description: 'github username who can trigger automatic approve in the event of an unable to merge condition. every user is do nothing if not specified. format must be comma separated .e.g. na-ga,0daryo'
+    required: false

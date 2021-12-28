@@ -13,6 +13,7 @@ github-actions-merger is github actions that merges pull request with commit mes
       "pr_number": ${{ github.event.issue.number }}
       "comment": ${{ github.event.comment.body }}
       "mergers": 'na-ga,0daryo'
+      "auto_approvers": 'na-ga,0daryo'
 ```
 https://github.com/abema/github-actions-merger/blob/main/.github/workflows/github-actions-merger.yaml
 
@@ -34,7 +35,8 @@ repo: ${{ github.event.repository.name }}
 pr_number: ${{ github.event.issue.number }}
 comment: ${{ github.event.comment.body }}
 merge_method: 'merge'
-mergers: 'comma separeted github usernames. every user is allowed if not specified'
+mergers: 'comma separeted github usernames. every user is allowed if not specified.'
+auto_approvers: 'comma separeted github usernames. every user is do nothing if not specified.'
 ```
 
 ## Note

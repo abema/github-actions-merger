@@ -15,14 +15,15 @@ import (
 )
 
 type env struct {
-	GithubToken string   `envconfig:"GITHUB_TOKEN"`
-	Owner       string   `envconfig:"OWNER"`
-	Repo        string   `envconfig:"REPO"`
-	PRNumber    int      `envconfig:"PR_NUMBER"`
-	Comment     string   `envconfig:"COMMENT"`
-	MergeMethod string   `envconfig:"MERGE_METHOD" default:"merge"`
-	Mergers     []string `envconfig:"MERGERS"`
-	Actor       string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
+	GithubToken   string   `envconfig:"GITHUB_TOKEN"`
+	Owner         string   `envconfig:"OWNER"`
+	Repo          string   `envconfig:"REPO"`
+	PRNumber      int      `envconfig:"PR_NUMBER"`
+	Comment       string   `envconfig:"COMMENT"`
+	MergeMethod   string   `envconfig:"MERGE_METHOD" default:"merge"`
+	Mergers       []string `envconfig:"MERGERS"`
+	AutoApprovers []string `envconfig:"AUTO_APPROVERS"`
+	Actor         string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
 }
 
 const (
@@ -42,6 +43,14 @@ func main() {
 	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
 	defer f()
 	client := newGHClient(e.GithubToken)
+	if autoApproveActor(e) {
+		if err := client.approveIfBlocked(ctx, e.Owner, e.Repo, e.PRNumber); err != nil {
+			if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
+				log.Fatalf("failed to send message: %v original: %v", serr, err)
+			}
+			log.Fatal(err.Error())
+		}
+	}
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
 			log.Fatalf("failed to send message: %v original: %v", serr, err)
@@ -64,11 +73,26 @@ func validateEnv(e env) error {
 	}
 	for _, m := range e.Mergers {
 		if e.Actor == m {
-			// if actor mathes specified mergers, then valid workflow run.
-			return nil
+			return nil // if actor matches specified mergers, then valid workflow run
 		}
 	}
 	return fmt.Errorf("actor %s is not in mergers list", e.Actor)
+}
+
+func autoApproveActor(e env) bool {
+	if len(e.AutoApprovers) == 0 {
+		log.Print("actor is not auto approve because auto approvers list is empty.")
+		return false
+	}
+	log.Printf("try to check auto approvers: %v", e.AutoApprovers)
+	for _, aa := range e.AutoApprovers {
+		if e.Actor == aa {
+			log.Print("actor is auto approve because: " + e.Actor)
+			return true // if actor matches specified auto approvers, returns true
+		}
+	}
+	log.Print("actor is not auto approve because auto approvers is not matched: " + e.Actor)
+	return false
 }
 
 type ghClient struct {
@@ -85,6 +109,29 @@ func newGHClient(token string) *ghClient {
 	return &ghClient{
 		client: client,
 	}
+}
+
+func (gh *ghClient) approveIfBlocked(ctx context.Context, owner, repo string, prNumber int) error {
+	log.Print("try to get pr for check to mergeable.")
+	pr, _, err := gh.client.PullRequests.Get(ctx, owner, repo, prNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get pull request: %w", err)
+	}
+	if pr.GetMerged() {
+		log.Print("this pr is already merged.")
+		return nil
+	}
+	if pr.GetMergeableState() != "blocked" {
+		log.Print("this pr mergeable state is not blocked.")
+		return nil
+	}
+	log.Print("try to create review with approve.")
+	event := "APPROVE"
+	_, _, err = gh.client.PullRequests.CreateReview(ctx, owner, repo, prNumber, &github.PullRequestReviewRequest{Event: &event})
+	if err != nil {
+		return fmt.Errorf("failed to approve pull request: %w", err)
+	}
+	return nil
 }
 
 func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int, mergeMethod string) error {
