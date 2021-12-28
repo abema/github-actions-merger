@@ -64,7 +64,7 @@ func validateEnv(e env) error {
 	}
 	for _, m := range e.Mergers {
 		if e.Actor == m {
-			// if actor mathes specified mergers, then valid workflow run.
+			// if actor matches specified mergers, then valid workflow run.
 			return nil
 		}
 	}
