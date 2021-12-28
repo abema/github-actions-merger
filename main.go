@@ -81,17 +81,17 @@ func validateEnv(e env) error {
 
 func autoApproveActor(e env) bool {
 	if len(e.AutoApprovers) == 0 {
-		log.Print("actor is not auto approve because auto approvers list is empty.")
+		log.Print("auto approvers list is empty")
 		return false
 	}
-	log.Printf("try to check auto approvers: %v", e.AutoApprovers)
+	log.Printf("try to check auto approvers %v", e.AutoApprovers)
 	for _, aa := range e.AutoApprovers {
 		if e.Actor == aa {
-			log.Print("actor is auto approve because: " + e.Actor)
+			log.Printf("actor %s is auto approver", e.Actor)
 			return true // if actor matches specified auto approvers, returns true
 		}
 	}
-	log.Print("actor is not auto approve because auto approvers is not matched: " + e.Actor)
+	log.Printf("actor %s is not included in the auto approvers list", e.Actor)
 	return false
 }
 
