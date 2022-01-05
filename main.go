@@ -36,12 +36,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	if err := validateEnv(e); err != nil {
-		log.Fatal(err.Error())
-	}
 	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
 	defer f()
 	client := newGHClient(e.GithubToken)
+	if err := validateEnv(e); err != nil {
+		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
+			log.Fatalf("failed to send message: %v original: %v", serr, err)
+		}
+		log.Fatal(err.Error())
+	}
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
 			log.Fatalf("failed to send message: %v original: %v", serr, err)
