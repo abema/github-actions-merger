@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 
@@ -137,15 +138,18 @@ func newCommitBody(pr *github.PullRequest) commitBody {
 	for _, l := range pr.Labels {
 		labels = append(labels, l.GetName())
 	}
+	description, releaseNote := splitReleaseNote(pr.GetBody())
 	return commitBody{
-		Message: pr.GetBody(),
-		Labels:  labels,
+		Message:     description,
+		Labels:      labels,
+		ReleaseNote: releaseNote,
 	}
 }
 
 type commitBody struct {
-	Labels  []string
-	Message string
+	Labels      []string
+	Message     string
+	ReleaseNote string
 }
 
 var bodyTpl = template.Must(template.New("commit").Parse(`
@@ -158,10 +162,13 @@ Labels:
   * {{ . }}
 {{- end -}}
 {{- end -}}
-`))
+` +
+	"```release-note\n* {{ .ReleaseNote }}\n```",
+))
 
 var (
 	needApproveRegexp = regexp.MustCompile("At least ([0-9]+) approving review is required by reviewers with write access")
+	releaseNoteRegexp = regexp.MustCompile("```release-note\n(.+?)\n```")
 )
 
 // errMsg returns error message to post from error.
@@ -175,4 +182,17 @@ func errMsg(err error) string {
 		return fmt.Sprintf("Need %s approving review", ss[1])
 	}
 	return err.Error()
+}
+
+// splitReleaseNote returns description and release note from commit body.
+// if release note is empty, return whole body and "NONE"
+func splitReleaseNote(body string) (description, releaseNote string) {
+	ss := releaseNoteRegexp.FindStringSubmatch(body)
+	if len(ss) != 2 {
+		return body, "NONE"
+	}
+	if rn := strings.TrimSpace(ss[1]); rn != "" {
+		return strings.ReplaceAll(body, ss[0], ""), rn
+	}
+	return body, "NONE"
 }

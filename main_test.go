@@ -37,7 +37,10 @@ pull request body
 
 Labels:
   * label1
-  * label2`,
+  * label2` +
+				"```release-note\n" +
+				"* NONE\n" +
+				"```",
 			wantErr: false,
 		},
 		{
@@ -49,7 +52,20 @@ Labels:
 			},
 			want: `
 pull request body
-`,
+` + "```release-note\n* NONE\n```",
+			wantErr: false,
+		},
+		{
+			name: "with release-note",
+			args: args{
+				pr: &github.PullRequest{
+					Body: github.String("pull request body\n```release-note\nThis is greate a release!!!\n```"),
+				},
+			},
+			want: `
+pull request body
+` +
+				"\n```release-note\n* This is greate a release!!!\n```",
 			wantErr: false,
 		},
 	}
@@ -180,6 +196,46 @@ func Test_errMsg(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := errMsg(tt.args.err); got != tt.want {
 				t.Errorf("errMsg() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_splitReleaseNote(t *testing.T) {
+	type args struct {
+		body string
+	}
+	tests := []struct {
+		name            string
+		args            args
+		wantDescription string
+		wantReleaseNote string
+	}{
+		{
+			name: "release note description",
+			args: args{
+				body: "release note description ```release-note\nThis is great release!!!\n```",
+			},
+			wantDescription: "release note description ",
+			wantReleaseNote: "This is great release!!!",
+		},
+		{
+			name: "no releaes note",
+			args: args{
+				body: "release note description",
+			},
+			wantDescription: "release note description",
+			wantReleaseNote: "NONE",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDescription, gotReleaseNote := splitReleaseNote(tt.args.body)
+			if gotDescription != tt.wantDescription {
+				t.Errorf("splitReleaseNote() gotDescription = %v, want %v", gotDescription, tt.wantDescription)
+			}
+			if gotReleaseNote != tt.wantReleaseNote {
+				t.Errorf("splitReleaseNote() gotReleaseNote = %v, want %v", gotReleaseNote, tt.wantReleaseNote)
 			}
 		})
 	}
