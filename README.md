@@ -1,5 +1,5 @@
 # github-actions-merger
-github-actions-merger is github actions that merges pull request with commit message including pull request labels.
+github-actions-merger is github actions that merges pull request with commit message including pull request labels and release-note block.
 
 ## Usage
 1. Write your workflow file.
@@ -17,12 +17,21 @@ github-actions-merger is github actions that merges pull request with commit mes
 https://github.com/abema/github-actions-merger/blob/main/.github/workflows/github-actions-merger.yaml
 
 2. comment ```/merge``` on github pull request comment.
+PullRequest body can include release-note block.
 
-3. pull request is merged, and commit message includes labels.
+e.g. 
+```release-note
+Breaking change!
+```
+
+3. pull request is merged, and commit message includes labels and release-note block.
 ```
 fix: readme
+Labels:
 * documentation
 * enhancement
+release-note:
+* Breaking change!
 ```
 
 ## Parameters
