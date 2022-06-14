@@ -2,7 +2,7 @@ name: 'github-actions-merger'
 description: 'merge pull request with labels'
 author: 'abema'
 branding:
-  icon: 'meh'
+  icon: 'git-merge'
   color: 'green'
 runs:
   using: 'docker'
