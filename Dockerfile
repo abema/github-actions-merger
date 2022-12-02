@@ -6,6 +6,6 @@ RUN go mod download
 COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o /bin/app
 
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/static
 COPY --from=builder /bin/app /bin/app
 ENTRYPOINT ["/bin/app"]
