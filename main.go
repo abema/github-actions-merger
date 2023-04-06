@@ -163,7 +163,7 @@ Labels:
 {{- end -}}
 {{- end -}}
 ` +
-	"```release-note\n* {{ .ReleaseNote }}\n```",
+	"\n\n```release-note\n* {{ .ReleaseNote }}\n```",
 ))
 
 var (
