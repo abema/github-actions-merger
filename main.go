@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"text/template"
@@ -35,28 +34,34 @@ func main() {
 	var e env
 	err := envconfig.Process("INPUT", &e)
 	if err != nil {
-		log.Fatal(err.Error())
+		fmt.Printf("failed to load inputs: %s\n", err.Error())
+		panic(err.Error())
 	}
 	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
 	defer f()
 	client := newGHClient(e.GithubToken)
 	if err := validateEnv(e); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
-			log.Fatalf("failed to send message: %v original: %v", serr, err)
+			fmt.Printf("failed to send message: %v original: %v", serr, err)
+			panic(serr.Error())
 		}
-		log.Fatal(err.Error())
+		fmt.Printf("failed to validate env: %v", err)
+		panic(err.Error())
 	}
 	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
-			log.Fatalf("failed to send message: %v original: %v", serr, err)
+			fmt.Printf("failed to send message: %v original: %v", serr, err)
+			panic(serr.Error())
 		}
-		log.Fatal(err.Error())
+		fmt.Printf("failed to merge: %v", err)
+		panic(err.Error())
 	}
 	successMsg := "Merged PR #" + fmt.Sprintf("%d", e.PRNumber) + " successfully!"
 	if err := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, successMsg); err != nil {
-		log.Fatal(err.Error())
+		fmt.Printf("failed to send message: %v", err)
+		panic(err.Error())
 	}
-	log.Printf(successMsg)
+	fmt.Printf(successMsg)
 }
 
 func validateEnv(e env) error {
