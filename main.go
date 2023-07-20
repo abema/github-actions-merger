@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -15,14 +17,15 @@ import (
 )
 
 type env struct {
-	GithubToken string   `envconfig:"GITHUB_TOKEN"`
-	Owner       string   `envconfig:"OWNER"`
-	Repo        string   `envconfig:"REPO"`
-	PRNumber    int      `envconfig:"PR_NUMBER"`
-	Comment     string   `envconfig:"COMMENT"`
-	MergeMethod string   `envconfig:"MERGE_METHOD" default:"merge"`
-	Mergers     []string `envconfig:"MERGERS"`
-	Actor       string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
+	GithubToken     string   `envconfig:"GITHUB_TOKEN"`
+	Owner           string   `envconfig:"OWNER"`
+	Repo            string   `envconfig:"REPO"`
+	PRNumber        int      `envconfig:"PR_NUMBER"`
+	Comment         string   `envconfig:"COMMENT"`
+	MergeMethod     string   `envconfig:"MERGE_METHOD" default:"merge"`
+	Mergers         []string `envconfig:"MERGERS"`
+	Actor           string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
+	EnableAutoMerge bool     `envconfig:"ENABLE_AUTO_MERGE" default:"false"`
 }
 
 const (
@@ -48,7 +51,7 @@ func main() {
 		fmt.Printf("failed to validate env: %v", err)
 		panic(err.Error())
 	}
-	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod); err != nil {
+	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod, e.EnableAutoMerge); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
 			fmt.Printf("failed to send message: %v original: %v", serr, err)
 			panic(serr.Error())
@@ -96,7 +99,7 @@ func newGHClient(token string) *ghClient {
 	}
 }
 
-func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int, mergeMethod string) error {
+func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int, mergeMethod string, enableAutoMerge bool) error {
 	pr, _, err := gh.client.PullRequests.Get(ctx, owner, repo, prNumber)
 	if err != nil {
 		return fmt.Errorf("failed to get pull request: %w", err)
@@ -105,10 +108,16 @@ func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int,
 	if err != nil {
 		return fmt.Errorf("failed to generate template: %w", err)
 	}
-	_, _, err = gh.client.PullRequests.Merge(ctx, owner, repo, prNumber, commitMsg, &github.PullRequestOptions{
-		CommitTitle: generateCommitSubject(pr),
-		MergeMethod: mergeMethod,
-	})
+
+	if enableAutoMerge {
+		// GitHub API docs: https://cli.github.com/manual/gh_pr_merge
+		err = exec.Command("gh", "pr", "merge", strconv.Itoa(prNumber), fmt.Sprintf("--%s", mergeMethod), "--auto", "--subject", generateCommitSubject(pr), "--body", commitMsg, "--repo", fmt.Sprintf("%s/%s", owner, repo)).Run()
+	} else {
+		_, _, err = gh.client.PullRequests.Merge(ctx, owner, repo, prNumber, commitMsg, &github.PullRequestOptions{
+			CommitTitle: generateCommitSubject(pr),
+			MergeMethod: mergeMethod,
+		})
+	}
 	if err != nil {
 		return fmt.Errorf("failed to merge pull request: %w", err)
 	}
