@@ -66,7 +66,12 @@ func main() {
 		fmt.Printf("failed to merge: %v", err)
 		panic(err.Error())
 	}
-	successMsg := "Merged PR #" + fmt.Sprintf("%d", e.PRNumber) + " successfully!"
+	var successMsg string
+	if e.EnableAutoMerge {
+		successMsg = "Enabled auto merge #" + fmt.Sprintf("%d", e.PRNumber) + " \nIf CI fails, fix problems and retry."
+	} else {
+		successMsg = "Merged PR #" + fmt.Sprintf("%d", e.PRNumber) + " successfully!"
+	}
 	if err := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, successMsg); err != nil {
 		fmt.Printf("failed to send message: %v", err)
 		panic(err.Error())
