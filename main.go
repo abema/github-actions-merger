@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -40,6 +41,12 @@ func main() {
 		fmt.Printf("failed to load inputs: %s\n", err.Error())
 		panic(err.Error())
 	}
+	err = os.Setenv("GITHUB_TOKEN", e.GithubToken)
+	if err != nil {
+		fmt.Printf("failed to set env: %s\n", err.Error())
+		panic(err.Error())
+	}
+
 	ctx, f := context.WithTimeout(context.Background(), jobTimeout)
 	defer f()
 	client := newGHClient(e.GithubToken)
