@@ -1,0 +1,22 @@
+{{- if .GitTrailers -}}
+{{- range .GitTrailers -}}
+{{ .Key }}: {{ .Value }}
+{{ end -}}
+{{- end -}}
+{{ if .Labels -}}
+---
+Labels:
+{{- range .Labels }}
+  * {{ . }}
+{{- end -}}
+{{- end -}}
+{{ if .Message }}
+---
+{{ .Message }}
+{{ end }}
+{{- if .ReleaseNote -}}
+---
+```release-note
+{{ .ReleaseNote }}
+```
+{{- end -}}

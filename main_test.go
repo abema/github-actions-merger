@@ -9,7 +9,8 @@ import (
 
 func Test_ghClient_generateCommitBody(t *testing.T) {
 	type args struct {
-		pr *github.PullRequest
+		pr          *github.PullRequest
+		gitTrailers []string
 	}
 	tests := []struct {
 		name    string
@@ -32,14 +33,16 @@ func Test_ghClient_generateCommitBody(t *testing.T) {
 					},
 				},
 			},
-			want: `
-pull request body
-
+			want: `---
 Labels:
   * label1
-  * label2` +
+  * label2
+---
+pull request body
+---
+` +
 				"```release-note\n" +
-				"* NONE\n" +
+				"NONE\n" +
 				"```",
 			wantErr: false,
 		},
@@ -51,8 +54,13 @@ Labels:
 				},
 			},
 			want: `
+---
 pull request body
-` + "```release-note\n* NONE\n```",
+---
+` +
+				"```release-note\n" +
+				"NONE\n" +
+				"```",
 			wantErr: false,
 		},
 		{
@@ -63,21 +71,49 @@ pull request body
 				},
 			},
 			want: `
+---
 pull request body
+
+---
 ` +
-				"\n```release-note\n* This is greate a release!!!\n```",
+				"```release-note\n" +
+				"This is greate a release!!!\n" +
+				"```",
+			wantErr: false,
+		},
+		{
+			name: "with git trailers",
+			args: args{
+				pr: &github.PullRequest{
+					Body: github.String("pull request body"),
+				},
+				gitTrailers: []string{
+					"Co-authored-by=abema",
+					"Co-authored-by=actions",
+				},
+			},
+			want: `Co-authored-by: abema
+Co-authored-by: actions
+
+---
+pull request body
+---
+` +
+				"```release-note\n" +
+				"NONE\n" +
+				"```",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := generateCommitBody(tt.args.pr)
+			got, err := generateCommitBody(tt.args.pr, tt.args.gitTrailers)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ghClient.generateCommitMessage() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("err = %v, wantErr = %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ghClient.generateCommitMessage() = %v, want %v", got, tt.want)
+				t.Errorf("got = %v, want = %v", got, tt.want)
 			}
 		})
 	}
