@@ -16,3 +16,6 @@
 
 # binary
 github-actions-merger
+
+# Goland
+.idea/
