@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"os/exec"
@@ -198,8 +199,11 @@ type gitTrailer struct {
 	Value string
 }
 
+//go:embed template/commit.tmpl
+var commitTemplateFile string
+
 func getTemplate(commitBody commitBody) (string, error) {
-	tmpl, err := template.ParseFiles("template/commit.tmpl")
+	tmpl, err := template.ParseFiles(commitTemplateFile)
 	if err != nil {
 		return "", err
 	}

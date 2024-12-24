@@ -2,10 +2,10 @@ FROM golang:1.23.4-alpine AS builder
 
 WORKDIR /app
 RUN apk add --no-cache curl
-COPY go.mod ./
-COPY go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+COPY template ./template
 ENV GH_VERSION="2.64.0"
 RUN curl -s -L "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o "gh_${GH_VERSION}_linux_amd64.tar.gz"
 RUN tar -xvf "gh_${GH_VERSION}_linux_amd64.tar.gz"
