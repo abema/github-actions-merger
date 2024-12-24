@@ -1,0 +1,27 @@
+name: Container
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - name: docker login
+        run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - run: make docker-build
+
+      - run: make docker-push
+        if: github.event_name != 'pull_request'
