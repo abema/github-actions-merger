@@ -8,4 +8,4 @@ docker-build:
 .PHONY: docker-push
 docker-push: TAG := latest
 docker-push: docker-build
-	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+	docker push ${DOCKER_IMAGE}:${TAG}
