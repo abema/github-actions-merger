@@ -203,7 +203,7 @@ type gitTrailer struct {
 var commitTemplateFile string
 
 func getTemplate(commitBody commitBody) (string, error) {
-	tmpl, err := template.ParseFiles(commitTemplateFile)
+	tmpl, err := template.New("commit").Parse(commitTemplateFile)
 	if err != nil {
 		return "", err
 	}
