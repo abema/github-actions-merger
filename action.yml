@@ -1,5 +1,5 @@
 name: 'github-actions-merger'
-description: 'merge pull request with labels'
+description: 'Merge pull-requests with metadata'
 author: 'abema'
 branding:
   icon: 'git-merge'
@@ -32,4 +32,7 @@ inputs:
     required: false
   enable_auto_merge:
     description: 'enable auto merge'
+    required: false
+  git_trailers:
+    description: 'git trailers'
     required: false

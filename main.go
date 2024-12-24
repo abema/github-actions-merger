@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,6 +27,7 @@ type env struct {
 	Mergers         []string `envconfig:"MERGERS"`
 	Actor           string   `envconfig:"GITHUB_ACTOR"` // github user who initiated the workflow.
 	EnableAutoMerge bool     `envconfig:"ENABLE_AUTO_MERGE" default:"false"`
+	GitTrailers     []string `envconfig:"GIT_TRAILERS"`
 }
 
 const (
@@ -58,7 +59,7 @@ func main() {
 		fmt.Printf("failed to validate env: %v", err)
 		panic(err.Error())
 	}
-	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod, e.EnableAutoMerge); err != nil {
+	if err := client.merge(ctx, e.Owner, e.Repo, e.PRNumber, e.MergeMethod, e.EnableAutoMerge, e.GitTrailers); err != nil {
 		if serr := client.sendMsg(ctx, e.Owner, e.Repo, e.PRNumber, errMsg(err)); serr != nil {
 			fmt.Printf("failed to send message: %v original: %v", serr, err)
 			panic(serr.Error())
@@ -111,12 +112,14 @@ func newGHClient(token string) *ghClient {
 	}
 }
 
-func (gh *ghClient) merge(ctx context.Context, owner, repo string, prNumber int, mergeMethod string, enableAutoMerge bool) error {
+func (gh *ghClient) merge(
+	ctx context.Context, owner, repo string, prNumber int, mergeMethod string, enableAutoMerge bool, gitTrailers []string,
+) error {
 	pr, _, err := gh.client.PullRequests.Get(ctx, owner, repo, prNumber)
 	if err != nil {
 		return fmt.Errorf("failed to get pull request: %w", err)
 	}
-	commitMsg, err := generateCommitBody(pr)
+	commitMsg, err := generateCommitBody(pr, gitTrailers)
 	if err != nil {
 		return fmt.Errorf("failed to generate template: %w", err)
 	}
@@ -140,13 +143,13 @@ func generateCommitSubject(pr *github.PullRequest) string {
 	return fmt.Sprintf("%s (#%d)", pr.GetTitle(), pr.GetNumber())
 }
 
-func generateCommitBody(pr *github.PullRequest) (string, error) {
-	body := newCommitBody(pr)
-	o := new(bytes.Buffer)
-	if err := bodyTpl.Execute(o, body); err != nil {
+func generateCommitBody(pr *github.PullRequest, gitTrailers []string) (string, error) {
+	body := newCommitBody(pr, gitTrailers)
+	t, err := getTemplate(body)
+	if err != nil {
 		return "", err
 	}
-	return o.String(), nil
+	return t, nil
 }
 
 func (gh *ghClient) sendMsg(ctx context.Context, owner, repo string, prNumber int, msg string) error {
@@ -159,16 +162,28 @@ func (gh *ghClient) sendMsg(ctx context.Context, owner, repo string, prNumber in
 	return nil
 }
 
-func newCommitBody(pr *github.PullRequest) commitBody {
+func newCommitBody(pr *github.PullRequest, gitTrailersInput []string) commitBody {
 	labels := make([]string, 0, len(pr.Labels))
 	for _, l := range pr.Labels {
 		labels = append(labels, l.GetName())
 	}
+
 	description, releaseNote := splitReleaseNote(pr.GetBody())
+
+	gitTrailers := make([]gitTrailer, 0, len(gitTrailersInput))
+	for _, i := range gitTrailersInput {
+		kv := strings.SplitN(i, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		gitTrailers = append(gitTrailers, gitTrailer{Key: kv[0], Value: kv[1]})
+	}
+
 	return commitBody{
 		Message:     description,
 		Labels:      labels,
 		ReleaseNote: releaseNote,
+		GitTrailers: gitTrailers,
 	}
 }
 
@@ -176,21 +191,42 @@ type commitBody struct {
 	Labels      []string
 	Message     string
 	ReleaseNote string
+	GitTrailers []gitTrailer
 }
 
-var bodyTpl = template.Must(template.New("commit").Parse(`
-{{- if .Message }}
-{{ .Message }}
-{{- end }}
-{{if .Labels}}
-Labels:
-{{- range .Labels }}
-  * {{ . }}
-{{- end -}}
-{{- end -}}
-` +
-	"\n\n```release-note\n* {{ .ReleaseNote }}\n```",
-))
+type gitTrailer struct {
+	Key   string
+	Value string
+}
+
+//go:embed template/commit.tmpl
+var commitTemplateFile string
+
+func getTemplate(commitBody commitBody) (string, error) {
+	tmpl, err := template.New("commit").Parse(commitTemplateFile)
+	if err != nil {
+		return "", err
+	}
+
+	data := struct {
+		Labels      []string
+		Message     string
+		ReleaseNote string
+		GitTrailers []gitTrailer
+	}{
+		Labels:      commitBody.Labels,
+		Message:     commitBody.Message,
+		ReleaseNote: commitBody.ReleaseNote,
+		GitTrailers: commitBody.GitTrailers,
+	}
+
+	var b strings.Builder
+	if err := tmpl.Execute(&b, data); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
+}
 
 var (
 	needApproveRegexp = regexp.MustCompile("At least ([0-9]+) approving review is required by reviewers with write access")
