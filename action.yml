@@ -6,7 +6,7 @@ branding:
   color: 'green'
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://abema/github-actions-merger@sha256:2fd78dac7f26b81a128e73107a6342356f27aca95477c6d1dba167483febd09b'
 inputs:
   merge_method:
     description: 'merge method'
