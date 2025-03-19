@@ -1,6 +1,6 @@
 name: merge
 
-on: 
+on:
   issue_comment:
     types: [created, edited]
 
@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create merge commit with labels
-        uses: abema/github-actions-merger@main
-        with: 
+        uses: abema/github-actions-merger@7a58d581874bf3a23720491331f4ab3d8072641b # ratchet:abema/github-actions-merger@main
+        with:
           "github_token": ${{ secrets.GITHUB_TOKEN }}
           "owner": ${{ github.event.repository.owner.login }}
           "repo": ${{ github.event.repository.name }}
